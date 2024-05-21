@@ -42,4 +42,35 @@ CHIP ALU {
 
     PARTS:
     //// Replace this comment with your code.
+
+    // handle the zx and zy
+    Mux16(a=x, b[0..15]=false, sel=zx, out=xMux);
+    Mux16(a=y, b[0..15]=false, sel=zy, out=yMux);
+
+    // handle nx and ny
+    Not16(in=xMux, out=notx);
+    Mux16(a=xMux, b=notx, sel=nx, out=processedX);
+
+    Not16(in=yMux, out=noty);
+    Mux16(a=yMux, b=noty, sel=ny, out=processedY);
+
+    // handle the f 
+    And16(a=processedX, b=processedY, out=XandY);
+    Add16(a=processedX, b=processedY, out=XplusY);
+    Mux16(a=XandY, b=XplusY, sel=f, out=fOut);
+
+    // handle no and ng
+    Not16(in=fOut, out=fNotOut);
+    Mux16(a=fOut, b=fNotOut, sel=no, out=out, out[15]=ng, out[0..7]=zrLow, out[8..15]=zrHigh);
+    
+    //handle zr
+    Or8Way(in=zrLow, out=orOut1);
+    Or8Way(in=zrHigh, out=orOut2);
+    Or(a=orOut1, b=orOut2, out=orOut3);
+    Not(in=orOut3, out=zr);
+    
+
+
+
+
 }
