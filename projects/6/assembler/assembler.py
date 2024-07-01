@@ -18,6 +18,21 @@ def cleanLines(lines):
         
     return cleanLines
 
+# perform the first pass to build out the symbol table
+# input is the asm program without the comments and white space
+def firstPass(lineTuple):
+    lineNumber = []
+    linecount = -1
+    for line in lineTuple:
+        if line[1] == "l_command":
+            label = getBetweenParentheses(line[0])
+            symbolTableCopy[label] = linecount + 1
+            continue
+        else:
+            lineNumber.append(line)
+            linecount += 1
+    return lineNumber    
+
 # take a single line and determine what type of command it is. a_command, c_command, l_command
 def commandType(line):
     commands = []
@@ -106,6 +121,14 @@ def process(lines):
             
     f.close
 
+def compareOutputs(file1, file2):
+    file1Out = readFile(file1)
+    file2Out = readFile(file2)
+    return file1Out == file2Out
+
+def getBetweenParentheses(word):
+    return word.split("(")[1].split(")")[0]
+    
 # driver function        
 def driver():
     filename = input("Please enter the assembly file: ")
@@ -174,15 +197,59 @@ jump = {
     "JMP": "111"
 }
 
-# filename = "Add.asm"
-# ready = parseFile(filename)
-# process(ready)
 
-driver()
+# Predefined symbols that are needed for symbolic programming
+symbolTable = {
+    "SP": 0,
+    "LCL": 1,
+    "ARG": 2,
+    "THIS": 3,
+    "THAT": 4, 
+    "R0": 0,
+    "R1": 1,
+    "R2": 2,
+    "R3": 3,
+    "R4": 4,
+    "R5": 5,
+    "R6": 6,
+    "R7": 7,
+    "R8": 8,
+    "R9": 9,
+    "R10": 10,
+    "R11": 11,
+    "R12": 12,
+    "R13": 13,
+    "R14": 14,
+    "R15": 15,
+    "SCREEN": 16384,
+    "KBD": 24576
+}
 
-# for i in ready:
-#     print(i)
-    
+symbolTableCopy = symbolTable.copy()
+
+# filename1 = "RectL.hack"
+# filename2 = "Prog.hack"
+# print(compareOutputs(filename1, filename2))
+
+
+filename = "Max.asm"
+ready = parseFile(filename)
+
+lines = firstPass(ready)
+
+for k,v in symbolTableCopy.items():
+    print(k,v)
+
+# for r,s in ready:
+#     print(r,s)
+# print(lines)
+# for line in lines:
+#     print(line)
+
+
+# driver()
+
+
 # test = "@45"
 # print(processA(test))
 
@@ -230,3 +297,10 @@ driver()
 # out = processA(test) + "\n"
 # print(out)
 
+
+# p = "(aaa)"
+# print(p.split("(")[1].split(")")[0])
+
+
+
+# print(getBetweenParentheses("(rene)"))
