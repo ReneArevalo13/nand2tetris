@@ -19,10 +19,11 @@ def cleanLines(lines):
     return cleanLines
 
 # perform the first pass to build out the symbol table
-# input is the asm program without the comments and white space
+# input is zip of clean lines and command type
 def firstPass(lineTuple):
     lineNumber = []
     linecount = -1
+
     for line in lineTuple:
         if line[1] == "l_command":
             label = getBetweenParentheses(line[0])
@@ -31,7 +32,19 @@ def firstPass(lineTuple):
         else:
             lineNumber.append(line)
             linecount += 1
-    return lineNumber    
+    return lineNumber   
+
+def secondPass(lineTuple):
+    variableStart = 16
+    for line in lineTuple:
+        if line[1] == "a_command":
+            label = line[0][1:]
+            if label in symbolTableCopy:
+                continue
+            else:
+                processVariables(line[0], variableStart)
+                variableStart += 1
+             
 
 # take a single line and determine what type of command it is. a_command, c_command, l_command
 def commandType(line):
@@ -51,17 +64,34 @@ def parseFile(filename):
     lines = readFile(filename)
     clean = cleanLines(lines)
     commands = commandType(clean)
-    return zip(clean, commands)
+    return list(zip(clean, commands))
+
+def passThrough(commandList):
+    firstPass(commandList)
+    secondPass(commandList)
 
 # get the binary code for an A instruction @value, where value will be the binary rep of the decimal number
 def processA(line):
     out = "0000000000000000"
-    num = int(line[1:])
-    ans = format(num, 'b')
-    cut = 16 - len(ans)
-    new = out[0:cut] + ans
+    var = line[1:]
+    # print(line[1:])
+    if var.isnumeric():  
+        num = int(line[1:])
+        ans = format(num, 'b')
+        cut = 16 - len(ans)
+        new = out[0:cut] + ans
+    else:
+        num = symbolTableCopy[var]
+        ans = format(num, 'b')
+        cut = 16 - len(ans)
+        new = out[0:cut] + ans
     return new
 
+def processVariables(line, variableStart):
+    symbol = line[1:]
+    if symbol[0].isalpha(): 
+        symbolTableCopy[symbol] = variableStart
+    
 # process the C commands into it's dest, comp, and jmp commands
 def compCommands(line):
     # retrieve the destination i.e. left of the equal sign
@@ -88,11 +118,9 @@ def buildCbinary(commands):
     if ("M" in commands[1]):
         # use comp1 dictionary, set a bit to 1
         comp = "1" + comp1.get(commands[1])
-        # print("comp is: " + comp)
     else:
         # use comp0 dictionary, set a bit to 0
         comp = "0" + comp0.get(commands[1])
-        # print("comp is: " + comp)
         
     destination = dest.get(commands[0])
     # print("destination is: " + destination)
@@ -105,18 +133,14 @@ def processC(line):
     return buildCbinary(commands)
 
 def process(lines):
+    passThrough(lines)
     f = open("Prog.hack", "w")
     for line, commandType in lines:
-        
         if (commandType == "a_command"):
-            # print("Processing A command")
             out = processA(line) + "\n"
-            # print(out)
             f.write(out)
         elif (commandType == "c_command"):
-            # print("Processing C command")
             out = processC(line) + "\n"
-            # print(out)
             f.write(out)
             
     f.close
@@ -134,6 +158,7 @@ def driver():
     filename = input("Please enter the assembly file: ")
     ready = parseFile(filename)
     process(ready)
+    symbolTableCopy.clear()
     
     
     
@@ -227,80 +252,7 @@ symbolTable = {
 
 symbolTableCopy = symbolTable.copy()
 
-# filename1 = "RectL.hack"
-# filename2 = "Prog.hack"
-# print(compareOutputs(filename1, filename2))
-
-
-filename = "Max.asm"
-ready = parseFile(filename)
-
-lines = firstPass(ready)
-
-for k,v in symbolTableCopy.items():
-    print(k,v)
-
-# for r,s in ready:
-#     print(r,s)
-# print(lines)
-# for line in lines:
-#     print(line)
-
-
-# driver()
-
-
-# test = "@45"
-# print(processA(test))
-
-# lines = readFile(filename)
-# clean = cleanLines(lines)
-# print(lines)
-# print(clean)
-# for line in lines:
-#     print(line)
-# print(clean)
-# commands = commandType(clean)
-# print(commands)
-
-
-# for i in clean:
-#     print(i[0])
-    
-# for c in clean:
-#     # print(c)
-#     for char in c:
-#         print(char)
-
-
-
-# out = "0000000000000000"
-# num = 45
-# ans = format(num, 'b')
-# print("The binary string is", ans)
-# print("the length of this binary is: " + str(len(ans)))
-# cut = 16 - len(ans)
-# new = out[0:cut]+ans
-# print(new)
-
-# test = "D=D-A"
-# commands = processC(test)
-# print(commands)
-# out = buildCbinary(commands)
-# print(out)
-
-# print("A is: " + out)
-# print("B is: 1110010011010000")
-# print(out == "1110010011010000")
-
-# test = "@3"
-# out = processA(test) + "\n"
-# print(out)
-
-
-# p = "(aaa)"
-# print(p.split("(")[1].split(")")[0])
-
-
-
-# print(getBetweenParentheses("(rene)"))
+driver()
+filename1 = "Pong.hack"
+filename2 = "Prog.hack"
+print(compareOutputs(filename1, filename2))
